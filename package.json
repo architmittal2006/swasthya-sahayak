@@ -1,0 +1,9 @@
+{
+  "name": "swasthya-sahayak",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Swasthya Sahayak - Rural Healthcare Awareness Chatbot",
+  "engines": {
+    "node": ">=18"
+  }
+}
