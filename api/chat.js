@@ -29,12 +29,12 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://swasthya-sahayak.vercel.app', // Optional site URL
-        'X-Title': 'Swasthya Sahayak',                         // Optional site name
+        'X-Title': 'Swasthya Sahayak', // Optional site name
       },
       body: JSON.stringify({
         model: 'qwen/qwen3.7-max',
         messages: formattedMessages,
-        max_tokens: 1000,
+        max_tokens: 1600, // raised from 1000 so replies can be more complete
       }),
     });
 
@@ -51,7 +51,6 @@ export default async function handler(req, res) {
     return res.status(200).json({
       content: [{ type: 'text', text: replyText }]
     });
-
   } catch (error) {
     console.error('Error in chat route:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
