@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         'X-Title': 'Swasthya Sahayak', // Optional site name
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3.7-max',
+        model: 'qwen/qwen-max',
         messages: formattedMessages,
         max_tokens: 1600, // raised from 1000 so replies can be more complete
       }),
