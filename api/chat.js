@@ -3,14 +3,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Uses your Vercel Environment Variable "API1"
+  // Uses your Vercel Environment Variable "API1" (OpenRouter API Key)
   const apiKey = process.env.API1;
   if (!apiKey) {
     return res.status(500).json({ error: 'Server is missing API1 key' });
   }
 
   const { system, messages } = req.body;
-
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'Invalid messages array' });
   }
@@ -23,15 +22,17 @@ export default async function handler(req, res) {
     }
     formattedMessages.push(...messages);
 
-    // Call Groq Cloud API
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    // Call OpenRouter API for Qwen3.7 Max
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://swasthya-sahayak.vercel.app', // Optional site URL
+        'X-Title': 'Swasthya Sahayak',                         // Optional site name
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3.7-max',
         messages: formattedMessages,
         max_tokens: 1000,
       }),
@@ -40,17 +41,15 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Groq API error:', data);
-      return res.status(response.status).json({ error: 'Groq API request failed', details: data });
+      console.error('OpenRouter API error:', data);
+      return res.status(response.status).json({ error: 'API request failed', details: data });
     }
 
     const replyText = data.choices?.[0]?.message?.content || "No response generated.";
 
     // Return in the payload structure index.html expects
     return res.status(200).json({
-      content: [
-        { type: 'text', text: replyText }
-      ]
+      content: [{ type: 'text', text: replyText }]
     });
 
   } catch (error) {
