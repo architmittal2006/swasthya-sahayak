@@ -281,6 +281,28 @@
   .composer button:hover{background:var(--teal-darker);}
   .composer button:disabled{background:var(--line);cursor:not-allowed;}
   .composer svg{width:18px;height:18px;stroke:#fff;}
+  #prescriptionBtn, #micBtn{
+    background:var(--paper);
+    border:1.5px solid var(--line);
+  }
+  #prescriptionBtn svg, #micBtn svg{stroke:var(--teal-deep);}
+  #prescriptionBtn:hover, #micBtn:hover{border-color:var(--marigold);background:var(--paper);}
+  #micBtn.recording{
+    background:var(--alert-red);
+    border-color:var(--alert-red);
+    animation:pulseMic 1s infinite ease-in-out;
+  }
+  #micBtn.recording svg{stroke:#fff;}
+  @keyframes pulseMic{
+    0%,100%{box-shadow:0 0 0 0 rgba(193,55,46,0.35);}
+    50%{box-shadow:0 0 0 8px rgba(193,55,46,0);}
+  }
+  .msg img{
+    max-width:100%;
+    border-radius:10px;
+    display:block;
+    margin-top:6px;
+  }
 
   footer{
     text-align:center;
@@ -335,6 +357,13 @@
   <div class="chat-wrap">
     <div class="chat-log" id="chatLog"></div>
     <div class="composer">
+      <input type="file" id="prescriptionInput" accept="image/*" style="display:none" onchange="handlePrescriptionUpload(event)">
+      <button onclick="document.getElementById('prescriptionInput').click()" id="prescriptionBtn" aria-label="Upload prescription" title="Upload a prescription photo">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </button>
+      <button onclick="toggleMic()" id="micBtn" aria-label="Voice input" title="Speak your question">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
       <input type="text" id="userInput" placeholder="Ask a health question…" onkeydown="if(event.key==='Enter')sendMessage()">
       <button onclick="sendMessage()" id="sendBtn" aria-label="Send">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
@@ -483,11 +512,66 @@ Respond ONLY in ${lang === 'hi' ? 'simple, plain Hindi (Devanagari script)' : 's
 
 Your job is general health AWARENESS, not diagnosis or treatment:
 - Cover topics like: vaccination schedules (Indian National Immunization Schedule), maternal and child health, hygiene and sanitation, nutrition, prevention and warning signs of common illnesses (dengue, malaria, typhoid, diarrhoea, TB, etc.), family planning basics, and government health schemes (Ayushman Bharat, PMSMA, Janani Suraksha Yojana, etc.).
-- Keep answers short and simple: 3-6 short sentences or a short bullet list. Avoid medical jargon; explain any term you must use.
+- Give thorough, genuinely useful answers — enough detail that the person doesn't need to ask three follow-up questions to get a complete picture (roughly 6-12 sentences, or a well-organized set of bullet points with a short intro line). Still keep the language plain and simple, and explain any term you must use — thorough does not mean technical.
 - NEVER diagnose a specific person's symptoms, NEVER prescribe medicines or dosages. Always direct anything specific to the person's own situation to their nearest PHC (Primary Health Centre), ASHA/ANM worker, or a doctor.
 - If the message describes a possible emergency (severe bleeding, chest pain, unconsciousness, difficulty breathing, snake/animal bite, poisoning, severe injury, a baby not moving/feeding, seizures, high fever with stiff neck, etc.), your FIRST line must clearly tell them to call 108 (free ambulance) immediately and go to the nearest hospital — then keep the rest brief.
 - Be warm, respectful, and encouraging of visiting real health workers and facilities. Do not be alarmist.
 - If asked something totally unrelated to health, gently redirect to health topics.`;
+
+/* ---------------- Microphone (voice input) ---------------- */
+let recognition = null;
+let isRecording = false;
+
+function toggleMic(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    alert(currentLang==='hi' ? "माफ़ कीजिए, आपका ब्राउज़र आवाज़ से टाइप करने की सुविधा सपोर्ट नहीं करता।" : "Sorry, your browser doesn't support voice input.");
+    return;
+  }
+  if(isRecording){
+    recognition.stop();
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.lang = currentLang === 'hi' ? 'hi-IN' : 'en-IN';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  const micBtn = document.getElementById('micBtn');
+  recognition.onstart = () => { isRecording = true; micBtn.classList.add('recording'); };
+  recognition.onend = () => { isRecording = false; micBtn.classList.remove('recording'); };
+  recognition.onerror = () => { isRecording = false; micBtn.classList.remove('recording'); };
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    const input = document.getElementById('userInput');
+    input.value = transcript;
+    sendMessage();
+  };
+  recognition.start();
+}
+
+/* ---------------- Prescription upload (no AI interpretation) ---------------- */
+function handlePrescriptionUpload(event){
+  const file = event.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const log = document.getElementById('chatLog');
+    const userDiv = document.createElement('div');
+    userDiv.className = 'msg user';
+    userDiv.innerHTML = `<img src="${reader.result}" alt="Uploaded prescription">`;
+    log.appendChild(userDiv);
+    log.scrollTop = log.scrollHeight;
+
+    const note = currentLang === 'hi'
+      ? "आपने एक पर्ची अपलोड की है। सुरक्षा के लिए, मैं फोटो से दवा या खुराक नहीं बताता — फोटो से पढ़ने में गलती हो सकती है, और गलत खुराक खतरनाक हो सकती है।\n\nकृपया यह पर्ची अपने डॉक्टर, नज़दीकी PHC या फार्मासिस्ट को ज़रूर दिखाएं। क्या आप चाहते हैं कि मैं आपको डॉक्टर से पूछने के लिए कुछ आसान सवाल लिख कर दूं?"
+      : "Thanks for uploading your prescription. For safety, I don't read medicines or dosages from photos — misreadings are common and a wrong dosage could be dangerous.\n\nPlease show this prescription to your doctor, nearest PHC, or a pharmacist in person. Would you like help writing down a few simple questions to ask them?";
+    addMessage('bot', note);
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
 
 async function sendMessage(){
   const input = document.getElementById('userInput');
