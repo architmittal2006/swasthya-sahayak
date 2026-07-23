@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     formattedMessages.push(...messages);
 
     // Call OpenRouter API for Qwen3.7 Max
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         'X-Title': 'Swasthya Sahayak', // Optional site name
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3.7-max',
+        model: 'qwen/qwen3.6-27b',
         messages: formattedMessages,
         max_tokens: 1600, // raised from 1000 so replies can be more complete
       }),
